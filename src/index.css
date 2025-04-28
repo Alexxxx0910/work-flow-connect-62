@@ -5,83 +5,76 @@
 
 @layer base {
   :root {
-    --background: 240 5% 96%;
+    --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 262 83% 66%;
+    --primary: 261 51% 51%;
     --primary-foreground: 210 40% 98%;
-
-    --secondary: 260 28% 50%;
-    --secondary-foreground: 210 40% 98%;
-
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 291 84% 60%;
-    --accent-foreground: 0 0% 100%;
-
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 262 83% 66%;
-
+    --ring: 261 51% 51%;
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 262 83% 66%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Colores WorkFlow Connect */
+    --wfc-purple: 261 51% 51%;
+    --wfc-purple-light: 261 51% 65%;
+    --wfc-purple-medium: 261 51% 41%;
+    --wfc-purple-dark: 261 51% 31%;
+    
+    /* Sidebar colors */
+    --sidebar-background: var(--background);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-accent: var(--primary);
+    --sidebar-accent-foreground: var(--primary-foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
   }
-
+ 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 262 83% 66%;
+    --primary: 261 51% 51%;
     --primary-foreground: 210 40% 98%;
-
-    --secondary: 260 28% 50%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 291 84% 60%;
-    --accent-foreground: 0 0% 100%;
-
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 262 83% 66%;
+    --ring: 261 51% 51%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 262 83% 66%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Colores WorkFlow Connect */
+    --wfc-purple: 261 51% 61%;
+    --wfc-purple-light: 261 51% 75%;
+    --wfc-purple-medium: 261 51% 51%;
+    --wfc-purple-dark: 261 51% 41%;
+    
+    /* Sidebar colors */
+    --sidebar-background: hsl(222.2 47.4% 11.2%);
+    --sidebar-foreground: hsl(210 40% 98%);
+    --sidebar-accent: hsl(261 51% 61%);
+    --sidebar-accent-foreground: hsl(210 40% 98%);
+    --sidebar-primary: hsl(261 51% 61%);
+    --sidebar-primary-foreground: hsl(210 40% 98%);
   }
 }
 
@@ -89,38 +82,8 @@
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground transition-colors duration-300;
-  }
-}
-
-@layer components {
-  .container-custom {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-  }
-  
-  /* Fix for text visibility in dark mode */
-  .dark .bg-gray-50 {
-    @apply bg-gray-800 text-gray-200;
-  }
-  
-  .dark .text-gray-600 {
-    @apply text-gray-300;
-  }
-  
-  .dark .text-gray-700 {
-    @apply text-gray-200;
-  }
-
-  /* Arreglar los selects y inputs en modo oscuro */
-  .dark select,
-  .dark .dark-select {
-    @apply bg-gray-800 border-gray-700 text-gray-200;
-  }
-  
-  /* Fix for feature cards in dark mode */
-  .dark .bg-gray-50 {
-    @apply bg-gray-800;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }

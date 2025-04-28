@@ -1,245 +1,100 @@
-/**
- * Landing Page Component
- * 
- * This is the main landing page of the application that is shown to non-authenticated users.
- * It contains:
- * - Header with navigation
- * - Hero section
- * - Features section
- * - Call-to-action section
- * - Benefits section
- * - Footer
- */
 
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Briefcase, MessageCircle, Users, CheckCircle } from 'lucide-react';
+import { MessageSquare, Briefcase, Users } from 'lucide-react';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-wfc-background">
-      {/* Header with navigation links */}
-      <header className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-        <div className="container-custom flex items-center justify-between py-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <span className="text-xl font-bold text-wfc-purple">WorkFlowConnect</span>
-          </Link>
-          
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-4">
-            <Link to="/login" className="text-gray-700 hover:text-wfc-purple dark:text-gray-200 dark:hover:text-wfc-purple">Iniciar Sesión</Link>
-            <Link to="/register">
-              <Button variant="default" className="bg-wfc-purple hover:bg-wfc-purple-medium">
-                Registrarse
-              </Button>
+    <div className="min-h-screen bg-gradient-to-b from-wfc-purple/10 to-white dark:from-wfc-purple/20 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        {/* Navbar */}
+        <nav className="flex justify-between items-center py-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-md bg-wfc-purple flex items-center justify-center">
+              <span className="text-white font-bold">WFC</span>
+            </div>
+            <span className="text-lg font-bold">WorkFlow Connect</span>
+          </div>
+          <div className="space-x-2">
+            <Link to="/login">
+              <Button variant="outline">Iniciar sesión</Button>
             </Link>
-          </nav>
-          
-          {/* Mobile Navigation */}
-          <div className="md:hidden flex items-center">
             <Link to="/register">
-              <Button variant="default" size="sm" className="bg-wfc-purple hover:bg-wfc-purple-medium mr-2">
-                Registrarse
-              </Button>
-            </Link>
-            <Link to="/login" className="text-sm text-gray-700 hover:text-wfc-purple dark:text-gray-200 dark:hover:text-wfc-purple">
-              Iniciar Sesión
+              <Button className="bg-wfc-purple hover:bg-wfc-purple-medium">Registrarse</Button>
             </Link>
           </div>
-        </div>
-      </header>
-      
-      {/* Hero Section with main call-to-action */}
-      <section className="py-16 md:py-24 bg-gradient-to-r from-wfc-purple to-wfc-magenta text-white">
-        <div className="container-custom">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-3xl md:text-5xl font-bold mb-6">
-                Conecta con los mejores profesionales freelance
-              </h1>
-              <p className="text-lg md:text-xl mb-8 text-white/90">
-                Publica tus proyectos o encuentra trabajo como freelancer en una plataforma diseñada para ti.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/register">
-                  <Button variant="default" size="lg" className="w-full sm:w-auto bg-white text-wfc-purple hover:bg-gray-100">
-                    Registrarse Gratis
-                  </Button>
-                </Link>
-                <Link to="/login">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto bg-transparent border-white text-white hover:bg-white/10">
-                    Iniciar Sesión
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            <div className="hidden md:block">
-              <img 
-                src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80" 
-                alt="Freelancers trabajando" 
-                className="rounded-lg shadow-xl"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Features Section highlighting platform capabilities */}
-      <section className="py-16 bg-white dark:bg-gray-800">
-        <div className="container-custom">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-wfc-purple dark:text-wfc-purple-light">
-            Todo lo que necesitas en un solo lugar
-          </h2>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-sm">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4 dark:bg-wfc-purple/20">
-                <Briefcase className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 dark:text-white">Propuestas de trabajo</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Publica tus proyectos o encuentra oportunidades que se ajusten a tus habilidades.
-              </p>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-sm">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4 dark:bg-wfc-purple/20">
-                <MessageCircle className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 dark:text-white">Mensajería integrada</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Comunícate fácilmente con clientes o freelancers a través de nuestro sistema de chat.
-              </p>
-            </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-sm">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4 dark:bg-wfc-purple/20">
-                <Users className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 dark:text-white">Perfiles profesionales</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Crea tu perfil destacando tus habilidades y experiencia para atraer más oportunidades.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* CTA Section encouraging sign up */}
-      <section className="py-16 bg-wfc-background dark:bg-gray-900">
-        <div className="container-custom">
-          <div className="bg-wfc-purple rounded-lg p-8 md:p-12 text-white text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">
-              Empieza a conectar con profesionales hoy mismo
-            </h2>
-            <p className="text-lg mb-8 max-w-xl mx-auto text-white/90">
-              Únete a nuestra comunidad de freelancers y empresas para impulsar tus proyectos o encontrar nuevas oportunidades.
-            </p>
+        </nav>
+
+        {/* Hero Section */}
+        <div className="max-w-6xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+            <span className="block">Comunícate en tiempo real con</span>
+            <span className="block text-wfc-purple">WorkFlow Connect</span>
+          </h1>
+          <p className="mt-6 text-xl max-w-2xl mx-auto">
+            La plataforma que conecta profesionales y clientes con herramientas de comunicación en tiempo real.
+          </p>
+          <div className="mt-10">
             <Link to="/register">
-              <Button variant="default" size="lg" className="bg-white text-wfc-purple hover:bg-gray-100">
-                Crear una cuenta gratis
+              <Button className="px-8 py-6 text-lg bg-wfc-purple hover:bg-wfc-purple-medium">
+                Comenzar ahora
               </Button>
             </Link>
           </div>
         </div>
-      </section>
-      
-      {/* Benefits Section listing advantages */}
-      <section className="py-16 bg-white dark:bg-gray-800">
-        <div className="container-custom">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 dark:text-white">
-            Por qué elegir WorkFlowConnect
-          </h2>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="flex items-start">
-              <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium mb-1 dark:text-white">Sin comisiones</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  No cobramos comisiones por los proyectos que completes.
+
+        {/* Features */}
+        <div className="py-12">
+          <div className="max-w-xl mx-auto px-4 sm:px-6 lg:max-w-6xl lg:px-8">
+            <h2 className="text-3xl font-extrabold text-center mb-16">Características principales</h2>
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg px-6 py-8 text-center">
+                <div className="text-wfc-purple mx-auto h-12 w-12 flex items-center justify-center rounded-md bg-wfc-purple/10">
+                  <MessageSquare className="h-8 w-8" />
+                </div>
+                <h3 className="mt-6 text-xl font-medium">Chat en tiempo real</h3>
+                <p className="mt-4 text-gray-500 dark:text-gray-400">
+                  Comunícate instantáneamente con clientes o profesionales mediante nuestro sistema de chat en tiempo real.
                 </p>
               </div>
-            </div>
-            
-            <div className="flex items-start">
-              <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium mb-1 dark:text-white">Pagos seguros</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Sistema de pagos seguro y protegido para todas las transacciones.
+              
+              <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg px-6 py-8 text-center">
+                <div className="text-wfc-purple mx-auto h-12 w-12 flex items-center justify-center rounded-md bg-wfc-purple/10">
+                  <Briefcase className="h-8 w-8" />
+                </div>
+                <h3 className="mt-6 text-xl font-medium">Gestión de propuestas</h3>
+                <p className="mt-4 text-gray-500 dark:text-gray-400">
+                  Crea, gestiona y responde a propuestas de trabajo fácilmente con nuestro sistema integrado.
                 </p>
               </div>
-            </div>
-            
-            <div className="flex items-start">
-              <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium mb-1 dark:text-white">Soporte 24/7</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Equipo de soporte disponible para ayudarte cuando lo necesites.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium mb-1 dark:text-white">Comunidad global</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Conecta con profesionales de todo el mundo en nuestra plataforma.
+              
+              <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg px-6 py-8 text-center">
+                <div className="text-wfc-purple mx-auto h-12 w-12 flex items-center justify-center rounded-md bg-wfc-purple/10">
+                  <Users className="h-8 w-8" />
+                </div>
+                <h3 className="mt-6 text-xl font-medium">Perfiles profesionales</h3>
+                <p className="mt-4 text-gray-500 dark:text-gray-400">
+                  Crea un perfil detallado para mostrar tus habilidades o encuentra profesionales según tus necesidades.
                 </p>
               </div>
             </div>
           </div>
         </div>
-      </section>
-      
-      {/* Footer with links and copyright */}
-      <footer className="bg-gray-800 text-white py-12 dark:bg-gray-900">
-        <div className="container-custom">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">WorkFlowConnect</h3>
-              <p className="text-gray-400 text-sm">
-                La plataforma que conecta a profesionales freelance con oportunidades de trabajo en todo el mundo.
-              </p>
+        
+        {/* Footer */}
+        <footer className="mt-20 border-t py-8">
+          <div className="max-w-6xl mx-auto flex justify-between items-center px-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-md bg-wfc-purple flex items-center justify-center">
+                <span className="text-white font-bold text-xs">WFC</span>
+              </div>
+              <span className="text-sm font-semibold">WorkFlow Connect</span>
             </div>
-            
-            <div>
-              <h4 className="text-md font-medium mb-4">Enlaces rápidos</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link to="/" className="hover:text-white">Inicio</Link></li>
-                <li><Link to="/register" className="hover:text-white">Registro</Link></li>
-                <li><Link to="/login" className="hover:text-white">Iniciar sesión</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-md font-medium mb-4">Soporte</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white">Centro de ayuda</a></li>
-                <li><a href="#" className="hover:text-white">Contacto</a></li>
-                <li><a href="#" className="hover:text-white">FAQ</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-md font-medium mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white">Términos de servicio</a></li>
-                <li><a href="#" className="hover:text-white">Política de privacidad</a></li>
-                <li><a href="#" className="hover:text-white">Cookies</a></li>
-              </ul>
-            </div>
+            <p className="text-sm text-gray-500">© 2025 WorkFlow Connect. Todos los derechos reservados.</p>
           </div>
-          
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>© {new Date().getFullYear()} WorkFlowConnect. Todos los derechos reservados.</p>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 };

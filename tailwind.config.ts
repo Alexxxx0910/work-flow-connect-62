@@ -1,14 +1,14 @@
 
-import type { Config } from "tailwindcss";
+import { type Config } from "tailwindcss";
 
 const config = {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
-  ],
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+	],
   prefix: "",
   theme: {
     container: {
@@ -53,11 +53,20 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // WorkFlow Connect custom colors
         "wfc-purple": {
-          DEFAULT: "#9333EA", // Morado principal
-          medium: "#7E22CE", // Morado más oscuro
-          light: "#A855F7", // Morado más claro
+          DEFAULT: "hsl(var(--wfc-purple))",
+          light: "hsl(var(--wfc-purple-light))",
+          medium: "hsl(var(--wfc-purple-medium))",
+          dark: "hsl(var(--wfc-purple-dark))",
         },
+        // Sidebar colors
+        "sidebar-background": "hsl(var(--sidebar-background))",
+        "sidebar-foreground": "hsl(var(--sidebar-foreground))",
+        "sidebar-accent": "hsl(var(--sidebar-accent))",
+        "sidebar-accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+        "sidebar-primary": "hsl(var(--sidebar-primary))",
+        "sidebar-primary-foreground": "hsl(var(--sidebar-primary-foreground))",
       },
       borderRadius: {
         lg: "var(--radius)",

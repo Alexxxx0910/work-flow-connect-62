@@ -1,311 +1,326 @@
 
-/**
- * Contexto de Chat
- * 
- * Este archivo gestiona toda la funcionalidad de chat incluyendo:
- * - Simulación de tiempo real de chats usando un servicio temporal
- * - Envío y recepción de mensajes
- * - Creación de nuevos chats
- * - Gestión del estado del chat activo
- */
-
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { 
-  getChats as getServiceChats,
-  createChat as createServiceChat,
-  sendMessage as sendServiceMessage,
-  addParticipantToChat as addServiceParticipantToChat,
-  setupChatListener
-} from '@/lib/chatService';
+import io, { Socket } from 'socket.io-client';
 import { toast } from '@/components/ui/use-toast';
 
-// Definición de tipos para mensajes y chats
-export type MessageType = {
-  id: string;           // ID único del mensaje
-  senderId: string;     // ID del usuario que envió el mensaje
-  content: string;      // Contenido del mensaje
-  timestamp: number;    // Timestamp cuando se envió el mensaje
-};
-
-export type ChatType = {
-  id: string;           // ID único del chat
-  name: string;         // Nombre del chat (para chats grupales)
-  participants: string[]; // Array de IDs de usuarios participantes
-  messages: MessageType[]; // Array de mensajes en el chat
-  isGroup: boolean;     // Indica si es un chat grupal o privado
-  lastMessage?: MessageType; // Último mensaje enviado (para mostrar vistas previas)
-};
-
-// Interfaz del contexto de chat definiendo funciones y estado disponibles
-interface ChatContextType {
-  chats: ChatType[];    // Lista de todos los chats del usuario
-  activeChat: ChatType | null; // Chat actualmente seleccionado
-  setActiveChat: (chat: ChatType | null) => void; // Función para cambiar el chat activo
-  sendMessage: (chatId: string, content: string) => void; // Enviar mensaje a un chat
-  createChat: (participantIds: string[], name?: string) => void; // Crear un nuevo chat
-  createPrivateChat: (participantId: string) => Promise<void>; // Crear un chat privado 1:1
-  getChat: (chatId: string) => ChatType | undefined; // Obtener un chat por ID
-  loadingChats: boolean; // Estado de carga de chats
-  onlineUsers: string[]; // IDs de usuarios conectados
-  loadChats: () => Promise<void>; // Cargar todos los chats
-  addParticipantToChat: (chatId: string, participantId: string) => Promise<boolean>; // Añadir usuario a chat
-  findExistingPrivateChat: (participantId: string) => ChatType | undefined; // Buscar chat privado existente
+export interface ChatMessage {
+  id: string;
+  content: string;
+  userId: string;
+  userName: string;
+  userPhoto?: string;
+  timestamp: number;
+  read: boolean;
 }
 
-// Crear el contexto
-const ChatContext = createContext<ChatContextType | null>(null);
+export interface Chat {
+  id: string;
+  name: string;
+  isGroup: boolean;
+  lastMessageAt: number;
+  participants: {
+    id: string;
+    name: string;
+    photoURL?: string;
+    isOnline?: boolean;
+    lastSeen?: number;
+  }[];
+  messages: ChatMessage[];
+}
 
-/**
- * Hook personalizado para usar el contexto de chat
- */
+interface ChatContextType {
+  chats: Chat[];
+  activeChat: Chat | null;
+  setActiveChat: (chat: Chat | null) => void;
+  messages: ChatMessage[];
+  sendMessage: (content: string) => void;
+  createChat: (participantIds: string[], name?: string) => Promise<Chat>;
+  loading: boolean;
+  fetchChats: () => Promise<void>;
+}
+
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
+
 export const useChat = () => {
   const context = useContext(ChatContext);
-  if (!context) {
-    throw new Error('useChat debe usarse dentro de un ChatProvider');
+  if (context === undefined) {
+    throw new Error('useChat must be used within a ChatProvider');
   }
   return context;
 };
 
-// Usuarios en línea simulados
-const MOCK_ONLINE_USERS = ['user1', 'user2', 'user3'];
+export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser, isLoggedIn } = useAuth();
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChat, setActiveChat] = useState<Chat | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [loading, setLoading] = useState(false);
 
-// Props para el provider
-interface ChatProviderProps {
-  children: ReactNode;
-}
+  // Inicializar socket
+  useEffect(() => {
+    if (isLoggedIn && currentUser) {
+      // Conectar a socket.io (usamos una URL mockeada para este ejemplo)
+      const newSocket = io('http://localhost:5000', {
+        auth: {
+          token: 'mock-token' // En un caso real, usaríamos un token JWT
+        }
+      });
 
-/**
- * Componente proveedor del contexto de chat
- * Gestiona la funcionalidad de chat en tiempo real
- */
-export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
-  // Obtener usuario actual del contexto de autenticación
-  const { currentUser } = useAuth();
-  
-  // Estados para gestionar los chats y su estado
-  const [chats, setChats] = useState<ChatType[]>([]);
-  const [activeChat, setActiveChat] = useState<ChatType | null>(null);
-  const [loadingChats, setLoadingChats] = useState(true);
-  const [onlineUsers] = useState<string[]>(MOCK_ONLINE_USERS);
+      newSocket.on('connect', () => {
+        console.log('Socket conectado');
+      });
 
-  /**
-   * Función para buscar un chat privado existente con un usuario específico
-   * Usada para prevenir la creación de chats duplicados
-   */
-  const findExistingPrivateChat = (participantId: string): ChatType | undefined => {
-    if (!currentUser) return undefined;
-    
-    return chats.find(
-      chat => !chat.isGroup && 
-      chat.participants.length === 2 && 
-      chat.participants.includes(currentUser.id) && 
-      chat.participants.includes(participantId)
-    );
-  };
+      newSocket.on('disconnect', () => {
+        console.log('Socket desconectado');
+      });
 
-  /**
-   * Función para cargar todos los chats y configurar los listeners
-   */
-  const loadChats = async () => {
-    // Si no hay usuario autenticado, no se cargan chats
-    if (!currentUser) {
-      setChats([]);
-      setLoadingChats(false);
-      return;
+      newSocket.on('connect_error', (err) => {
+        console.error('Error de conexión socket:', err);
+        toast({
+          variant: "destructive",
+          title: "Error de conexión",
+          description: "No se pudo conectar al servidor de chat",
+        });
+      });
+
+      newSocket.on('new_message', (message: ChatMessage) => {
+        // Añadir el nuevo mensaje al estado
+        setMessages(prev => [...prev, message]);
+        
+        // Actualizar la lista de chats para mostrar el último mensaje
+        setChats(prev => {
+          return prev.map(chat => {
+            if (chat.id === activeChat?.id) {
+              return {
+                ...chat,
+                messages: [...chat.messages, message],
+                lastMessageAt: message.timestamp
+              };
+            }
+            return chat;
+          });
+        });
+        
+        // Si el mensaje no es del usuario actual, mostrar notificación
+        if (message.userId !== currentUser?.id && Notification.permission === 'granted') {
+          new Notification(`Nuevo mensaje de ${message.userName}`, {
+            body: message.content
+          });
+        }
+      });
+
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+      };
     }
-  
-    setLoadingChats(true);
+  }, [isLoggedIn, currentUser]);
+
+  // Cuando se selecciona un chat activo, cargar sus mensajes
+  useEffect(() => {
+    if (activeChat) {
+      setMessages(activeChat.messages || []);
+      
+      // Marcar mensajes como leídos cuando se abre el chat
+      if (socket && currentUser) {
+        socket.emit('mark_read', { chatId: activeChat.id });
+      }
+    } else {
+      setMessages([]);
+    }
+  }, [activeChat, socket, currentUser]);
+
+  // Función para cargar los chats del usuario
+  const fetchChats = useCallback(async () => {
+    if (!isLoggedIn) return;
+    
+    setLoading(true);
     try {
-      console.log("Cargando chats para el usuario:", currentUser.id);
-      // Obtener chats iniciales
-      const userChats = await getServiceChats();
-      setChats(userChats);
-      console.log("Chats cargados:", userChats.length);
+      // Simulamos la carga de chats (esto sería una llamada a la API)
+      // En un caso real, obtendríamos los datos del servidor
+      const mockChats: Chat[] = [
+        {
+          id: "1",
+          name: "",
+          isGroup: false,
+          lastMessageAt: Date.now() - 3600000, // 1 hora atrás
+          participants: [
+            {
+              id: "1",
+              name: "Usuario Demo",
+              photoURL: "",
+              isOnline: true
+            },
+            {
+              id: "2",
+              name: "Ana García",
+              photoURL: "",
+              isOnline: true
+            }
+          ],
+          messages: [
+            {
+              id: "101",
+              content: "Hola, ¿cómo estás?",
+              userId: "2",
+              userName: "Ana García",
+              timestamp: Date.now() - 3600000,
+              read: true
+            },
+            {
+              id: "102",
+              content: "Todo bien, gracias. ¿Y tú?",
+              userId: "1",
+              userName: "Usuario Demo",
+              timestamp: Date.now() - 3500000,
+              read: true
+            }
+          ]
+        },
+        {
+          id: "2",
+          name: "",
+          isGroup: false,
+          lastMessageAt: Date.now() - 7200000, // 2 horas atrás
+          participants: [
+            {
+              id: "1",
+              name: "Usuario Demo",
+              photoURL: "",
+              isOnline: true
+            },
+            {
+              id: "3",
+              name: "Carlos Rodríguez",
+              photoURL: "",
+              isOnline: false
+            }
+          ],
+          messages: [
+            {
+              id: "201",
+              content: "¿Puedes revisar el documento que te envié?",
+              userId: "3",
+              userName: "Carlos Rodríguez",
+              timestamp: Date.now() - 7200000,
+              read: true
+            }
+          ]
+        }
+      ];
+      
+      setChats(mockChats);
     } catch (error) {
-      console.error("Error al cargar chats:", error);
+      console.error('Error al cargar chats:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar los chats. Por favor, inténtalo de nuevo."
+        description: "No se pudieron cargar los chats",
       });
     } finally {
-      setLoadingChats(false);
+      setLoading(false);
     }
-  };
+  }, [isLoggedIn]);
 
-  /**
-   * Configurar listeners para actualizaciones de chat
-   */
+  // Cargar chats al iniciar
   useEffect(() => {
-    if (!currentUser) return;
+    fetchChats();
+  }, [fetchChats]);
 
-    console.log("Configurando listener para chats...");
-    const unsubscribe = setupChatListener((updatedChats) => {
-      console.log("Actualización de chats recibida:", updatedChats.length);
-      
-      // Filtrar solo los chats donde el usuario es participante
-      const userChats = updatedChats.filter(chat => 
-        chat.participants.includes(currentUser.id)
-      );
-      
-      setChats(userChats);
-      
-      // Si hay un chat activo, actualizarlo también
-      if (activeChat) {
-        const updatedActiveChat = userChats.find(chat => chat.id === activeChat.id);
-        if (updatedActiveChat) {
-          setActiveChat(updatedActiveChat);
-        }
-      }
-    });
-    
-    return () => {
-      console.log("Limpiando listener de chats");
-      unsubscribe();
+  // Función para enviar un mensaje
+  const sendMessage = (content: string) => {
+    if (!socket || !activeChat || !currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+      });
+      return;
+    }
+
+    const newMessage: ChatMessage = {
+      id: `temp-${Date.now()}`, // ID temporal
+      content,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userPhoto: currentUser.photoURL,
+      timestamp: Date.now(),
+      read: false
     };
-  }, [currentUser, activeChat]);
 
-  // Cargar chats iniciales cuando cambia el usuario
-  useEffect(() => {
-    loadChats();
-  }, [currentUser]);
-
-  /**
-   * Función auxiliar para obtener un chat específico por ID
-   */
-  const getChat = (chatId: string) => {
-    return chats.find(chat => chat.id === chatId);
+    // Optimistic update: añadir mensaje localmente
+    setMessages(prev => [...prev, newMessage]);
+    
+    // Emitir mensaje a través de socket
+    socket.emit('send_message', {
+      chatId: activeChat.id,
+      content
+    });
   };
 
-  /**
-   * Función para enviar mensajes
-   */
-  const sendMessage = async (chatId: string, content: string) => {
-    if (!currentUser || !content.trim()) return;
-    
-    try {
-      console.log("Enviando mensaje:", { chatId, content });
-      await sendServiceMessage(chatId, content);
-      console.log("Mensaje enviado correctamente");
-    } catch (error) {
-      console.error("Error al enviar mensaje:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo enviar el mensaje. Por favor, inténtalo de nuevo."
-      });
+  // Función para crear un nuevo chat
+  const createChat = async (participantIds: string[], name?: string): Promise<Chat> => {
+    if (!isLoggedIn || !currentUser) {
+      throw new Error('Debes iniciar sesión para crear un chat');
     }
-  };
 
-  /**
-   * Función para crear un chat (puede ser grupal o 1:1)
-   */
-  const createChat = async (participantIds: string[], name = '') => {
-    if (!currentUser) return;
-    
-    // Asegurar que el usuario actual esté incluido
-    if (!participantIds.includes(currentUser.id)) {
-      participantIds.push(currentUser.id);
-    }
-    
     try {
-      const newChat = await createServiceChat(participantIds, name);
-      console.log("Nuevo chat creado:", newChat);
+      setLoading(true);
       
-      // Actualizar el chat activo inmediatamente
+      // En un caso real, esto sería una llamada a la API
+      // Simulamos la creación de un chat
+      const isGroup = participantIds.length > 1;
+      const newChat: Chat = {
+        id: `new-${Date.now()}`,
+        name: name || "",
+        isGroup,
+        lastMessageAt: Date.now(),
+        participants: [
+          {
+            id: currentUser.id,
+            name: currentUser.name,
+            photoURL: currentUser.photoURL,
+            isOnline: true
+          },
+          // Simulamos datos para el otro participante
+          {
+            id: participantIds[0],
+            name: "Nuevo Contacto",
+            photoURL: "",
+            isOnline: false
+          }
+        ],
+        messages: []
+      };
+      
+      // Actualizar la lista de chats
+      setChats(prev => [...prev, newChat]);
+      
+      // Establecer el nuevo chat como activo
       setActiveChat(newChat);
+      
+      return newChat;
     } catch (error) {
-      console.error("Error al crear chat:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo crear el chat. Por favor, inténtalo de nuevo."
-      });
+      console.error('Error al crear chat:', error);
+      throw new Error('No se pudo crear el chat');
+    } finally {
+      setLoading(false);
     }
   };
 
-  /**
-   * Función mejorada para crear o navegar a un chat privado existente
-   */
-  const createPrivateChat = async (participantId: string) => {
-    if (!currentUser || participantId === currentUser.id) return;
-    
-    try {
-      // Verificar si ya existe un chat privado con este usuario
-      const existingChat = findExistingPrivateChat(participantId);
-      
-      if (existingChat) {
-        // Si el chat existe, establecerlo como activo
-        console.log("Chat privado existente encontrado, navegando a él:", existingChat.id);
-        setActiveChat(existingChat);
-        return;
-      }
-      
-      // Si no existe, crear un nuevo chat privado
-      console.log("Creando nuevo chat privado con usuario:", participantId);
-      const participants = [currentUser.id, participantId];
-      const newChat = await createServiceChat(participants);
-      console.log("Nuevo chat privado creado:", newChat);
-      
-      setActiveChat(newChat);
-    } catch (error) {
-      console.error("Error al crear chat privado:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo crear el chat privado. Por favor, inténtalo de nuevo."
-      });
-    }
+  const value = {
+    chats,
+    activeChat,
+    setActiveChat,
+    messages,
+    sendMessage,
+    createChat,
+    loading,
+    fetchChats
   };
 
-  /**
-   * Función para añadir participantes a un chat existente
-   */
-  const addParticipantToChat = async (chatId: string, participantId: string) => {
-    try {
-      // Comprobar si el chat existe y es un chat grupal
-      const chat = chats.find(c => c.id === chatId);
-      if (!chat) return false;
-      
-      // Comprobar si el usuario ya está en el chat
-      if (chat.participants.includes(participantId)) return false;
-      
-      // Añadir participante
-      const success = await addServiceParticipantToChat(chatId, participantId);
-      console.log(`Participante ${participantId} añadido al chat ${chatId}`);
-      
-      return success;
-    } catch (error) {
-      console.error("Error al añadir participante:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo añadir el participante. Por favor, inténtalo de nuevo."
-      });
-      return false;
-    }
-  };
-
-  // Proporcionar el contexto a los componentes hijos
-  return (
-    <ChatContext.Provider
-      value={{
-        chats,
-        activeChat,
-        setActiveChat,
-        sendMessage,
-        createChat,
-        createPrivateChat,
-        getChat,
-        loadingChats,
-        onlineUsers,
-        loadChats,
-        addParticipantToChat,
-        findExistingPrivateChat
-      }}
-    >
-      {children}
-    </ChatContext.Provider>
-  );
+  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 };

@@ -1,116 +1,112 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/components/ui/use-toast';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const navigate = useNavigate();
   const { login } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     
-    if (!email || !password) {
-      setError('Por favor, completa todos los campos');
+    // Validación básica
+    if (!formData.email || !formData.password) {
+      toast({
+        variant: "destructive",
+        title: "Error de validación",
+        description: "Por favor completa todos los campos",
+      });
       return;
     }
     
+    setIsSubmitting(true);
     try {
-      setLoading(true);
-      await login(email, password);
+      await login(formData.email, formData.password);
+      navigate('/dashboard');
     } catch (error) {
-      console.error('Error de inicio de sesión:', error);
-      setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
+      console.error('Error al iniciar sesión:', error);
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md p-8">
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-12 h-12 rounded-md bg-wfc-purple flex items-center justify-center">
-              <span className="text-white font-bold text-xl">WFC</span>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-wfc-purple/10 to-white dark:from-wfc-purple/20 dark:to-gray-900 p-4">
+      <div className="w-full max-w-md rounded-lg border shadow-sm bg-background p-8">
+        <div className="flex flex-col items-center space-y-2 mb-8">
+          <Link to="/" className="flex items-center">
+            <div className="w-10 h-10 rounded-md bg-wfc-purple flex items-center justify-center">
+              <span className="text-white font-bold">WFC</span>
             </div>
-          </div>
-          <h1 className="text-2xl font-bold">WorkFlow Connect</h1>
-          <p className="text-gray-500 mt-2">La plataforma que conecta proyectos con talento</p>
+          </Link>
+          <h1 className="text-2xl font-bold">Iniciar Sesión</h1>
+          <p className="text-center text-muted-foreground text-sm">
+            Ingresa tus credenciales para acceder a tu cuenta
+          </p>
         </div>
         
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
-            <CardDescription>
-              Ingresa tus credenciales para acceder a tu cuenta
-            </CardDescription>
-          </CardHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Correo electrónico</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="tu@email.com"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
           
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Correo electrónico</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="tu@ejemplo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Link to="#" className="text-sm text-wfc-purple hover:underline">
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </CardContent>
-            
-            <CardFooter className="flex flex-col">
-              <Button
-                className="w-full bg-wfc-purple hover:bg-wfc-purple-medium"
-                type="submit"
-                disabled={loading}
-              >
-                {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-              </Button>
-              
-              <p className="mt-4 text-center text-sm">
-                ¿No tienes una cuenta?{' '}
-                <Link to="/register" className="text-wfc-purple hover:underline">
-                  Regístrate
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Card>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Contraseña</Label>
+              <Link to="#" className="text-xs text-wfc-purple hover:underline">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full bg-wfc-purple hover:bg-wfc-purple-medium"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
+          </Button>
+        </form>
+        
+        <div className="mt-6 text-center text-sm">
+          ¿No tienes una cuenta?{' '}
+          <Link to="/register" className="text-wfc-purple hover:underline">
+            Regístrate
+          </Link>
+        </div>
       </div>
     </div>
   );

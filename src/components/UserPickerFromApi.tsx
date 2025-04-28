@@ -1,128 +1,73 @@
 
 import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, User } from 'lucide-react';
-import { apiRequest } from '@/lib/api';
-import { toast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { useData } from '@/contexts/DataContext';
+import { Loader2 } from 'lucide-react';
 
-export type SimpleUser = {
+export interface SimpleUser {
   id: string;
   name: string;
-  photoURL: string;
-  role: string;
-};
-
-interface UserPickerFromApiProps {
-  excludeIds?: string[];
-  onSelect: (user: SimpleUser) => void;
-  selectedUsers: SimpleUser[];
-  label?: string;
+  photoURL?: string;
 }
 
-export const UserPickerFromApi: React.FC<UserPickerFromApiProps> = ({
-  excludeIds = [],
-  onSelect,
-  selectedUsers,
-  label = "Selecciona usuarios"
-}) => {
-  const [users, setUsers] = useState<SimpleUser[]>([]);
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { currentUser, isLoggedIn } = useAuth();
+interface UserPickerProps {
+  selectedUsers: SimpleUser[];
+  onSelect: (user: SimpleUser) => void;
+}
 
+export const UserPickerFromApi: React.FC<UserPickerProps> = ({ selectedUsers, onSelect }) => {
+  const { users, loading } = useData();
+  const [filteredUsers, setFilteredUsers] = useState<SimpleUser[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filtrar usuarios que ya están seleccionados y por búsqueda
   useEffect(() => {
-    if (!isLoggedIn) {
-      console.log("Usuario no autenticado, no se cargarán usuarios");
-      return;
-    }
-    
-    async function fetchUsers() {
-      setLoading(true);
-      try {
-        console.log("Solicitando lista de usuarios desde API");
-        const response = await apiRequest('/users/all');
-        console.log("Respuesta de API usuarios:", response);
-        
-        if (response.success && Array.isArray(response.users)) {
-          setUsers(response.users);
-          console.log(`Cargados ${response.users.length} usuarios correctamente`);
-        } else {
-          // Si no hay usuarios en el backend, mostrar mensaje
-          setUsers([]);
-          console.warn("No se pudieron cargar los usuarios desde la API");
-        }
-      } catch (error) {
-        console.error("Error al cargar usuarios:", error);
-        // Usar datos vacíos si no se pueden cargar usuarios
-        setUsers([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchUsers();
-  }, [isLoggedIn]);
-
-  const filteredUsers = users.filter(
-    (user) =>
-      !excludeIds.includes(user.id) &&
-      !selectedUsers.some((sel) => sel.id === user.id) &&
-      user.name.toLowerCase().includes(query.toLowerCase()) &&
-      (currentUser ? user.id !== currentUser.id : true)
-  );
+    const selectedIds = new Set(selectedUsers.map(user => user.id));
+    const filtered = users.filter(user => 
+      !selectedIds.has(user.id) && 
+      user.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredUsers(filtered);
+  }, [users, selectedUsers, searchQuery]);
 
   return (
-    <div>
-      <label className="block font-semibold mb-1 text-sm">{label}</label>
-      <div className="relative mt-1 mb-2">
-        <Input
-          placeholder="Buscar usuario por nombre..."
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          className="pl-7"
+    <div className="w-full">
+      <Command className="rounded-lg border shadow-md">
+        <CommandInput 
+          placeholder="Buscar usuarios..." 
+          value={searchQuery}
+          onValueChange={setSearchQuery}
         />
-        <User className="absolute left-2 top-2.5 text-gray-400 h-4 w-4 pointer-events-none" />
-      </div>
-      <ScrollArea className="max-h-56">
-        {loading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="animate-spin h-6 w-6 text-wfc-purple" />
-          </div>
-        ) : !isLoggedIn ? (
-          <div className="p-2 text-gray-500 text-sm">
-            Debes iniciar sesión para ver usuarios
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="p-2 text-gray-500 text-sm">
-            {users.length === 0
-              ? "No se encontraron usuarios disponibles"
-              : "No se encontraron usuarios con ese filtro"}
-          </div>
-        ) : (
-          <ul>
-            {filteredUsers.map(user => (
-              <li key={user.id}>
-                <button
-                  type="button"
-                  className="flex items-center w-full px-2 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition"
-                  onClick={() => onSelect(user)}
-                >
-                  <Avatar className="h-6 w-6 mr-2">
-                    <AvatarImage src={user.photoURL || ''} />
-                    <AvatarFallback className="bg-wfc-purple-medium text-white text-xs">
-                      {user.name?.[0]?.toUpperCase() || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{user.name}</span>
-                  <span className="ml-auto text-xs text-gray-500">{user.role}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </ScrollArea>
+        <CommandEmpty>
+          {loading ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader2 className="h-5 w-5 animate-spin text-wfc-purple" />
+              <span className="ml-2">Cargando usuarios...</span>
+            </div>
+          ) : (
+            "No se encontraron usuarios"
+          )}
+        </CommandEmpty>
+        <CommandGroup className="max-h-64 overflow-auto">
+          {filteredUsers.map(user => (
+            <CommandItem
+              key={user.id}
+              value={user.id}
+              onSelect={() => onSelect(user)}
+              className="flex items-center py-2 cursor-pointer hover:bg-wfc-purple/10"
+            >
+              <Avatar className="h-7 w-7 mr-2">
+                <AvatarImage src={user.photoURL} alt={user.name} />
+                <AvatarFallback className="bg-wfc-purple-medium text-white text-xs">
+                  {user.name?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span>{user.name}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </Command>
     </div>
   );
 };
